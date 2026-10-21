@@ -17,29 +17,8 @@ CI/CD for **RDICIDR** (a React subnet calculator) on Google Cloud. GitHub Action
 | Identity | GitHub OIDC → Workload Identity Federation; no keys. Each deployer only works from its own branch. |
 | Public window | `public_access=false` by default (public access prevention enforced); enabled only for the recording. |
 
-```mermaid
-flowchart LR
-    dev[feature/* or bugfix/*] -->|PR| devel
-    devel -->|PR, devel only| stage
-    subgraph GitHub
-      devel
-      stage
-      ci[CI: install · lint · test · build]
-      cd[CD: build + terraform apply]
-    end
-    dev -. PR checks .-> ci
-    devel -. merge .-> cd
-    stage -. merge .-> cd
-    cd -->|OIDC token| wif[Workload Identity Federation]
-    wif -->|short-lived creds| sa[gha-deploy-devel / gha-deploy-stage]
-    subgraph GCP project
-      sa --> site[(site bucket per env)]
-      site -->|usage logs| logs[(access-log bucket per env)]
-      state[(Terraform state bucket)]
-    end
-    sa --> state
-    users((Internet users)) -->|HTTPS, only while public_access=true| site
-```
+<img width="945" height="593" alt="image" src="https://github.com/user-attachments/assets/05ddcd45-1fc6-40e6-a1ce-cc21358cbf2b" />
+
 
 ## Repository layout
 
@@ -152,6 +131,6 @@ gcloud storage buckets describe gs://<project>-rdicidr-<env>-site --format='valu
 - [Public access prevention](https://cloud.google.com/storage/docs/public-access-prevention)
 
 **Terraform**
+- [Partial backend configuration](https://developer.hashicorp.com/terraform/language/backend#partial-configuration)
 - [`google_iam_workload_identity_pool_provider`](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/iam_workload_identity_pool_provider)
 - [`google_storage_bucket`](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket)
-- [Partial backend configuration](https://developer.hashicorp.com/terraform/language/backend#partial-configuration)
