@@ -129,9 +129,11 @@ CD builds with `PUBLIC_URL=https://storage.googleapis.com/<site-bucket>`, so ass
 https://storage.googleapis.com/<project>-rdicidr-<env>-site/index.html
 ```
 
-Manual equivalent:
+Manual equivalent (build first, so asset URLs point at the bucket):
 
 ```bash
+GENERATE_SOURCEMAP=false \
+PUBLIC_URL=https://storage.googleapis.com/<project>-rdicidr-devel-site npm run build
 cd terraform/app
 terraform init -backend-config="bucket=<project>-tfstate" -backend-config="prefix=app/devel"
 terraform apply -var-file=envs/devel.tfvars -var public_access=true
