@@ -147,16 +147,11 @@ gcloud storage buckets describe gs://<project>-rdicidr-<env>-site --format='valu
 ## References
 
 **Google Cloud**
-- [Usage logs & storage logs](https://cloud.google.com/storage/docs/access-logs)
 - [Workload Identity Federation with deployment pipelines](https://cloud.google.com/iam/docs/workload-identity-federation-with-deployment-pipelines)
+- [Usage logs & storage logs](https://cloud.google.com/storage/docs/access-logs)
 - [Public access prevention](https://cloud.google.com/storage/docs/public-access-prevention)
-- [Uniform bucket-level access](https://cloud.google.com/storage/docs/uniform-bucket-level-access)
-- [IAM roles for Cloud Storage](https://cloud.google.com/storage/docs/access-control/iam-roles)
-- [Cloud Storage audit logging](https://cloud.google.com/storage/docs/audit-logging)
 
 **Terraform**
-- [`google_storage_bucket`](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket)
-- [`google_storage_bucket_object`](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_object)
 - [`google_iam_workload_identity_pool_provider`](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/iam_workload_identity_pool_provider)
-- [GCS backend](https://developer.hashicorp.com/terraform/language/backend/gcs)
+- [`google_storage_bucket`](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket)
 - [Partial backend configuration](https://developer.hashicorp.com/terraform/language/backend#partial-configuration)
