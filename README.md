@@ -17,35 +17,8 @@ CI/CD for **RDICIDR** (a React subnet calculator) on Google Cloud. GitHub Action
 | Identity | GitHub OIDC → Workload Identity Federation; no keys. Each deployer only works from its own branch. |
 | Public window | `public_access=false` by default (public access prevention enforced); enabled only for the recording. |
 
-```mermaid
-%%{init: {"themeVariables": {"fontSize": "22px"}, "flowchart": {"nodeSpacing": 30, "rankSpacing": 45}}}%%
-flowchart TB
-    subgraph GitHub
-      direction TB
-      dev[feature/* or bugfix/*]
-      ci[CI: install · lint · test · build]
-      devel
-      stage
-      cd[CD: build + terraform apply]
-      dev -. PR checks .-> ci
-      ci -->|PR merged| devel
-      devel -->|PR, devel only| stage
-      devel -. merge .-> cd
-      stage -. merge .-> cd
-    end
-    cd -->|OIDC token| wif[Workload Identity Federation]
-    wif -->|short-lived creds| sa[Deployer service account, one per env]
-    subgraph GCP project
-      direction TB
-      state[(Terraform state bucket)]
-      site[(site bucket per env)]
-      logs[(access-log bucket per env)]
-      site -->|usage logs| logs
-    end
-    sa --> state
-    sa --> site
-    users((Internet users)) -->|HTTPS, only while public_access=true| site
-```
+<img width="945" height="593" alt="image" src="https://github.com/user-attachments/assets/05ddcd45-1fc6-40e6-a1ce-cc21358cbf2b" />
+
 
 ## Repository layout
 
