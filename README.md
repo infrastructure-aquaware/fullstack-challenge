@@ -18,26 +18,32 @@ CI/CD for **RDICIDR** (a React subnet calculator) on Google Cloud. GitHub Action
 | Public window | `public_access=false` by default (public access prevention enforced); enabled only for the recording. |
 
 ```mermaid
-flowchart LR
-    dev[feature/* or bugfix/*] -->|PR| devel
-    devel -->|PR, devel only| stage
+%%{init: {"themeVariables": {"fontSize": "22px"}, "flowchart": {"nodeSpacing": 30, "rankSpacing": 45}}}%%
+flowchart TB
     subgraph GitHub
+      direction TB
+      dev[feature/* or bugfix/*]
+      ci[CI: install · lint · test · build]
       devel
       stage
-      ci[CI: install · lint · test · build]
       cd[CD: build + terraform apply]
+      dev -. PR checks .-> ci
+      ci -->|PR merged| devel
+      devel -->|PR, devel only| stage
+      devel -. merge .-> cd
+      stage -. merge .-> cd
     end
-    dev -. PR checks .-> ci
-    devel -. merge .-> cd
-    stage -. merge .-> cd
     cd -->|OIDC token| wif[Workload Identity Federation]
     wif -->|short-lived creds| sa[gha-deploy-devel / gha-deploy-stage]
     subgraph GCP project
-      sa --> site[(site bucket per env)]
-      site -->|usage logs| logs[(access-log bucket per env)]
+      direction TB
       state[(Terraform state bucket)]
+      site[(site bucket per env)]
+      logs[(access-log bucket per env)]
+      site -->|usage logs| logs
     end
     sa --> state
+    sa --> site
     users((Internet users)) -->|HTTPS, only while public_access=true| site
 ```
 
