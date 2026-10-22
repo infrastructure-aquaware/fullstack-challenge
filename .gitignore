@@ -1,0 +1,47 @@
+# Private local workspace
+tmp/
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+build/
+dist/
+coverage/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Terraform working/state files (.terraform.lock.hcl is intentionally tracked)
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+crash.log
+crash.*.log
+*.auto.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# GCP credentials
+*credentials*.json
+*-key.json
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
