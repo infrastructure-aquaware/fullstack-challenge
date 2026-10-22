@@ -2,6 +2,7 @@ import IPv4Addr from "./IPv4Addr";
 import "./App.css";
 
 function App() {
+  console.log(notDefined)
   return (
     <div className="App">
       <header className="App-header">
