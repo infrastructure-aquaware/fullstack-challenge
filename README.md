@@ -34,7 +34,7 @@ flowchart TB
       stage -. merge .-> cd
     end
     cd -->|OIDC token| wif[Workload Identity Federation]
-    wif -->|short-lived creds| sa[gha-deploy-devel / gha-deploy-stage]
+    wif -->|short-lived creds| sa[Deployer service account, one per env]
     subgraph GCP project
       direction TB
       state[(Terraform state bucket)]
