@@ -152,6 +152,6 @@ gcloud storage buckets describe gs://<project>-rdicidr-<env>-site --format='valu
 - [Public access prevention](https://cloud.google.com/storage/docs/public-access-prevention)
 
 **Terraform**
+- [Partial backend configuration](https://developer.hashicorp.com/terraform/language/backend#partial-configuration)
 - [`google_iam_workload_identity_pool_provider`](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/iam_workload_identity_pool_provider)
 - [`google_storage_bucket`](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket)
-- [Partial backend configuration](https://developer.hashicorp.com/terraform/language/backend#partial-configuration)
