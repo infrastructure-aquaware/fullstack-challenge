@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  merge-policy:
+    name: Branch policy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check source and target branches
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          echo "PR: ${HEAD_REF} -> ${BASE_REF}"
+          case "${BASE_REF}" in
+            stage)
+              if [ "${HEAD_REF}" != "devel" ]; then
+                echo "::error::Only 'devel' may be merged into 'stage' (got '${HEAD_REF}')."
+                exit 1
+              fi
+              ;;
+            devel)
+              if ! echo "${HEAD_REF}" | grep -Eq '^(feature|bugfix)/[a-z0-9._-]+$'; then
+                echo "::error::Branches merged into 'devel' must be named feature/<name> or bugfix/<name> (got '${HEAD_REF}')."
+                exit 1
+              fi
+              ;;
+          esac
+          echo "Branch policy OK"
+
+  build:
+    name: Install, lint, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Lint (ESLint)
+        run: npm run lint
+
+      - name: Test (Jest)
+        run: CI=true npm run test
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ github.event.pull_request.number }}
+          path: build/
+          retention-days: 7

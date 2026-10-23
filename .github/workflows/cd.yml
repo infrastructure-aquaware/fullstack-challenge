@@ -1,0 +1,89 @@
+name: CD
+
+# A merged PR into devel or stage deploys that environment.
+on:
+  push:
+    branches: [devel, stage]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # OIDC token for Workload Identity Federation (no keys)
+
+concurrency:
+  group: cd-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy ${{ github.ref_name }}
+    if: github.ref_name == 'devel' || github.ref_name == 'stage'
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name }}
+    env:
+      ENVIRONMENT: ${{ github.ref_name }}
+      TF_IN_AUTOMATION: "true"
+      TF_VAR_public_access: ${{ vars.PUBLIC_ACCESS == 'true' }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Test
+        run: CI=true npm run test
+
+      - name: Build
+        env:
+          GENERATE_SOURCEMAP: "false" # do not publish source maps
+        run: |
+          # Assets are served from https://storage.googleapis.com/<bucket>/
+          export PUBLIC_URL="https://storage.googleapis.com/${{ vars.GCP_PROJECT_ID }}-rdicidr-${ENVIRONMENT}-site"
+          npm run build
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOYER_SA }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.5
+          terraform_wrapper: false
+
+      - name: Terraform init
+        working-directory: terraform/app
+        run: |
+          terraform init -input=false \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="prefix=app/${ENVIRONMENT}"
+
+      - name: Terraform plan
+        working-directory: terraform/app
+        run: terraform plan -input=false -var-file="envs/${ENVIRONMENT}.tfvars" -out=tfplan
+
+      - name: Terraform apply
+        working-directory: terraform/app
+        run: terraform apply -input=false tfplan
+
+      - name: Summary
+        working-directory: terraform/app
+        run: |
+          {
+            echo "### Deployed ${ENVIRONMENT}"
+            echo "- Site bucket: \`$(terraform output -raw site_bucket)\`"
+            echo "- Access-log bucket: \`$(terraform output -raw access_log_bucket)\`"
+            echo "- Public access: \`$(terraform output -raw public_access)\`"
+            echo "- URL: $(terraform output -raw site_url)"
+          } >> "$GITHUB_STEP_SUMMARY"

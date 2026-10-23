@@ -1,0 +1,79 @@
+name: Teardown
+
+# Run from the devel or stage branch ("Use workflow from"); the branch selects
+# the environment and the only deployer identity allowed to act on it.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "disable-public removes anonymous access; destroy deletes the site bucket and objects"
+        type: choice
+        options: [disable-public, destroy]
+        default: disable-public
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: cd-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  teardown:
+    name: ${{ inputs.mode }} ${{ github.ref_name }}
+    if: github.ref_name == 'devel' || github.ref_name == 'stage'
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name }}
+    env:
+      ENVIRONMENT: ${{ github.ref_name }}
+      TF_IN_AUTOMATION: "true"
+      TF_VAR_public_access: "false"
+    defaults:
+      run:
+        shell: bash
+        working-directory: terraform/app
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOYER_SA }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.5
+          terraform_wrapper: false
+
+      - name: Terraform init
+        run: |
+          terraform init -input=false \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="prefix=app/${ENVIRONMENT}"
+
+      # No build directory here, so the plan also removes the uploaded objects.
+      - name: Disable public access
+        if: inputs.mode == 'disable-public'
+        run: terraform apply -input=false -auto-approve -var-file="envs/${ENVIRONMENT}.tfvars"
+
+      - name: Destroy site (access logs are kept)
+        if: inputs.mode == 'destroy'
+        run: |
+          terraform destroy -input=false -auto-approve -var-file="envs/${ENVIRONMENT}.tfvars" \
+            -target=google_storage_bucket_iam_member.public_read \
+            -target=google_storage_bucket_object.build \
+            -target=google_storage_bucket.site
+
+      - name: Verify site is not publicly readable
+        run: |
+          BUCKET="${{ vars.GCP_PROJECT_ID }}-rdicidr-${ENVIRONMENT}-site"
+          CODE=$(curl -s -o /dev/null -w '%{http_code}' "https://storage.googleapis.com/${BUCKET}/index.html")
+          echo "Anonymous GET index.html -> HTTP ${CODE}"
+          if [ "${CODE}" = "200" ]; then
+            echo "::error::Site is still publicly readable."
+            exit 1
+          fi
